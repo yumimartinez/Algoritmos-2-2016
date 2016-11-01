@@ -1,0 +1,242 @@
+#include <iostream>
+#include <conio.h>
+#include <stdio.h>
+#include <string.h>
+
+struct regAmigos
+{
+	char nombre[50];
+	char sexo;
+	int edad;
+	char estado;
+};
+using namespace std;
+
+void crear_archivos(char nomArchivo[])
+{
+	FILE *ptr;
+	ptr=fopen ("amigos.dat", "ab");
+	fclose(ptr);
+}
+void addamigo()
+{	
+	FILE *ptr;
+	regAmigos reg;
+	cout << "Ingrese el nombre: ";
+	do{
+	gets(reg.nombre);
+	}while(strlen(reg.nombre)==0);
+	do{
+	cout << "Ingrese el sexo: ";
+	cin >> reg.sexo;
+	}while ((reg.sexo !='f')&&(reg.sexo !='m')&&(reg.sexo !='M')&&(reg.sexo !='F'));
+	do{
+	cout << "Ingrese la edad: ";
+	cin >> reg.edad;
+	}while ((reg.edad<0)||(reg.edad>151));
+
+	reg.estado = 'A';
+
+	ptr=fopen ("amigos.dat", "ab");
+	fwrite(&reg,sizeof(reg),1,ptr);
+	fclose(ptr);
+
+}
+void reporte_amigos()
+{
+	FILE*ptr;
+	regAmigos reg;
+	int c=0;
+	ptr=fopen("amigos.dat","rb");
+	if (ptr!=NULL)
+	{
+		cout << "\n\		REPORTE DE AMIGOS		";
+		cout << "\n---------------------------------------------------------------";
+		cout << "\nNro. Reg.	Nombre			Edad		Sexo";
+		cout << "\n---------------------------------------------------------------";
+		cout << endl;
+		fread (&reg, sizeof(reg),1,ptr);
+		while (feof(ptr)==false)
+		{
+			c++;
+			if(reg.estado == 'A')
+			{
+			cout << c << "		" << reg.nombre << "		" << reg.edad << "		" ;
+			}
+			if (reg.sexo=='M')
+			{
+				cout << "Masculino"<< endl;
+			}
+			else
+			{
+				cout << "Femenino" << endl;
+			}
+			fread (&reg,sizeof(reg),1,ptr);
+			
+		}
+		cout << endl;
+		cout << "\n===========================================";
+		fclose (ptr);
+	}
+	else
+	{
+		cout << "Archivo no existe existe" ;
+	}
+
+}
+void mostrarEdadMayor()
+{
+	FILE*ptr;
+	regAmigos reg;
+	int edadMay=0;
+	char nombreAmigoMay[30];
+	ptr=fopen("amigos.dat","rb");
+	if(ptr!=NULL)
+	{
+		fread(&reg, sizeof(reg),1,ptr); // Lee un registro desde el archivo
+		while (feof(ptr)==false)
+		{
+			if(reg.estado == 'A')
+			{
+				if(reg.edad > edadMay)
+				{
+					edadMay=reg.edad;
+					strcpy(nombreAmigoMay, reg.nombre);
+				}
+			}
+			fread(&reg,sizeof(reg),1,ptr); // Lee un registro desde el archivo
+		}
+
+		cout << "\n============================================================";
+		cout<< "\n\tLa edad mayor es: " << edadMay;
+		rewind(ptr); // coloca el puntero al inicio del archivo
+		fread(&reg, sizeof(reg),1,ptr); //lee los registros desde el archivo
+		while (feof(ptr)==NULL)
+		{
+			if(reg.estado =='A')
+			{
+				if(reg.edad==edadMay)
+				{
+					cout << "\n\tY pertenece a: " << reg.nombre;
+				}
+			}
+			fread(&reg,sizeof(reg),1,ptr);
+		}
+		cout << "\n============================================================";
+		fclose(ptr);
+	}
+	else
+	{
+		cout << "\nError...El archivo no existe!\n";
+	}
+}
+void promedio_edad()
+{
+	int M=0,m=0,F=0,f=0,prom;
+	regAmigos reg;
+	FILE*ptr;
+	ptr=fopen("amigos.dat","rb");
+	if(ptr!=NULL)
+	{
+		fread(&reg,sizeof(reg),1,ptr);
+		while(feof(ptr)==false)
+		{
+			if(reg.estado=='A')
+			{
+				if(reg.sexo=='F')
+				{
+					F=F+reg.edad;
+					f++;
+				}
+				else
+				{
+					M=M+reg.edad;
+					m++;
+				}
+				fread(&reg,sizeof(reg),1,ptr);
+			}
+			
+		}
+	fclose(ptr);
+	}
+	if(f==0)
+	{
+		cout << "No hay mujeres registradas ";
+	}
+	else
+	{
+		cout << "El promedio de mujeres es: " << F/f << endl;
+	}
+	if(m==0)
+	{
+		cout << "No hay hombres registrados ";
+	}
+	else
+	{
+		cout << "El promedio de los hombres es: " << M/m << endl;
+	}
+	if((m+F)==0)
+	{
+		cout << "No hay amigos registrados " << endl;
+	}
+	else 
+	{
+		cout << "El promedio es: " << (M+F)/(m+f) << endl;
+	}
+}
+void buscar_registro(int nroReg)
+{
+	int op;
+	regAmigos reg;
+	FILE*ptr;
+	ptr=fopen("amigos.dat","rb");
+	if(ptr!=NULL)
+	{
+		fseek(ptr,(nroReg-1)*sizeof(reg),SEEK_SET);
+		fread(&reg,sizeof(reg),1,ptr);
+		if((feof(ptr)==false)&&(reg.estado=='A'))
+		{
+			cout << reg.nombre << "		" << reg.edad << "		" << reg.sexo << endl;
+		}
+		fclose(ptr);
+	}
+}
+			
+
+
+void main()
+{
+	int opcion,n;
+	do
+	{
+		cout << endl;
+		cout << " *****MENU***** " << endl;
+		cout << "1. Añadir" << endl;
+		cout << "2. Mostrar amigos" << endl;
+		cout << "3. Estadistica promedio de edad " << endl;
+		cout << "4. Buscar amigo " << endl;
+		cout << "0. Salir" << endl;
+		cin >> opcion;
+		system("cls");
+		switch (opcion)
+		{
+			case 1:
+				addamigo(); break;
+			case 2:
+				reporte_amigos(); break;
+			case 3: 
+				promedio_edad(); break;
+			case 4:
+				do{
+					cout << "Ingrese el numero de registro que desea buscar: ";
+					cin >> n;
+				}while(n==0);
+				buscar_registro(n); break;
+
+			default: break;
+		
+		}
+	}while (opcion!=0);
+
+getch();
+}
