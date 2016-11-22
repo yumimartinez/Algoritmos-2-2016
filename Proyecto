@@ -1,0 +1,2828 @@
+#include <iostream>
+#include <conio.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <windows.h>
+#include <iomanip>
+#include <string.h>
+#include <math.h>
+#define N 50
+
+struct regProducto
+{
+	int idProd;
+	char nombre[30];
+	int stock;
+	float precio;
+	char estado;
+};
+struct regCliente
+{
+	int idCliente;
+	char nombre[30];
+	char email[80];
+	char telefono[12];
+	char nit[15];
+	char estado;
+};
+struct regVendedor
+{
+	int idVend;
+	char nombre[30];
+	char email[80];
+	char telefono[12];
+	char estado;
+};
+struct regVenta
+{
+	int idVenta;
+	char fecha[12];
+	int cantidad;
+	float precioUnit;
+	int idProd;
+	int idVend;
+	int idCliente;
+	char estado;
+};
+struct regCompra
+{
+	int idCompra;
+	char fecha[12];
+	int cantidad;
+	int idProd;
+	char estado;
+};
+
+using namespace std;
+
+//ARCHIVOS
+void archivo_producto()
+{
+	FILE*ptr;
+	ptr=fopen("producto.dat","wb");
+	fclose(ptr);
+}
+void archivo_cliente()
+{
+	FILE*ptr;
+	ptr=fopen("cliente.dat","wb");
+	fclose(ptr);
+}
+void archivo_vendedor()
+{
+	FILE*ptr;
+	ptr=fopen("vendedor.dat","wb");
+	fclose(ptr);
+}
+void archivo_venta()
+{
+	FILE*ptr;
+	ptr=fopen("venta.dat","wb");
+	fclose(ptr);
+}
+void archivo_compra()
+{
+	FILE*ptr;
+	ptr=fopen("compra.dat","wb");
+	fclose(ptr);
+}
+
+//VALIDACIONES
+bool verif_solo_numeros(char cad[])
+{
+	bool k=true;
+	int i=0;
+	while(i<strlen(cad)&&k==true)
+	{
+		if((cad[i]>='0')&&(cad[i]<='9'))
+		{
+			i++;
+		}
+		else
+		{
+			k=false;
+		}
+	}
+	if (strlen(cad)==0)
+	{
+		k=false;
+	}
+	return k;
+}
+bool verif_solo_letras(char cad[])
+{
+	int i=0;
+	bool k=true;
+	while(i<strlen(cad)&&k==true)
+	{
+		if(isalpha(cad[i])!=0 || cad[i]==' ')
+		{
+			i++;
+		}
+		else
+		{
+			k=false;
+		}
+		if(cad[0]==' ')
+		{
+			k=false;
+		}
+	}
+	return(k);
+}
+bool validarnombre(char cad[30])
+{
+	int n=strlen(cad),i;
+	for(i=0;i<n;i++)
+	{
+		if(cad[i]!=' ' && cad[i]!=-92 && cad[i]!=-91)
+			if(!((cad[i]>96 && cad[i]<123) || (cad[i]>64 && cad[i]<91)))
+				return false;
+	}
+	return true;
+}
+bool validaremail(char cad[30])
+{
+	int n=strlen(cad),i,arr=0,punto=0;
+	for(i=0;i<n;i++)
+	{
+		if(cad[i]!='@' && cad[i] !='.' && cad[i]!='_'&&cad[i]!='-')
+			if(cad[i]!=-92 && cad[i]!=-91)
+				if(!((cad[i]>96 && cad[i]<123) || (cad[i]>64 && cad[i]<91)))
+					return false;
+		if(cad[i]=='@')
+			arr++;
+		if(cad[i]=='.')
+			punto++;
+	}
+	if(punto>0)
+		if(arr==1)
+			return true;
+	return false;
+}
+int chartoint(char a[30])
+{
+    int n;
+	sscanf(a,"%d",&n);
+	return n;
+}
+
+bool verificar_fecha(char fecha[12])
+{
+	bool k=false;
+	char dia_cad[30],mes_cad[30],anho_cad[30];
+	int dia,mes,anho;
+	dia_cad[0]=fecha[0];
+	dia_cad[1]=fecha[1];
+	dia_cad[2]='\0';
+	mes_cad[0]=fecha[3];
+	mes_cad[1]=fecha[4];
+	mes_cad[2]='\0';
+	anho_cad[0]=fecha[6];
+	anho_cad[1]=fecha[7];
+	anho_cad[2]=fecha[8];
+	anho_cad[3]=fecha[9];
+	anho_cad[4]='\0';
+	if((fecha[2]=='/')&&(fecha[5]=='/'))
+	{
+		if(verif_solo_numeros(dia_cad)&&verif_solo_numeros(mes_cad)&&verif_solo_numeros(anho_cad))
+		{
+			dia=chartoint(dia_cad);
+			mes=chartoint(mes_cad);
+			anho=chartoint(anho_cad);
+			if((anho>999)&&(anho<=9999))
+			{
+				if(mes==1 || mes==3 || mes==5 || mes==7 || mes==8 || mes==10 || mes==12)
+				{
+					if((dia>0)&&(dia<=31))
+					{
+						k=true;
+					}
+				}
+				if(mes==2 || mes==4 || mes==6 || mes==9 || mes==11)
+				{
+					if((dia>0)&&(dia<=30))
+					{
+						k=true;
+					}
+				}
+				if(anho%4==0)
+				{
+					if(mes==2)
+					{
+						if((dia>0)&&(dia<=29))
+						{
+							k=true;
+						}
+					}
+				}
+				else
+				{
+					if(mes==2)
+					{
+						if((dia>0)&&(dia<=28))
+						{
+							k=true;
+						}
+					}
+				}
+			}
+		}
+	}
+	if(k==false)
+	{
+		cout << "\n Introducir la fecha [DD/MM/AAAA]: ";
+	}
+	return k;
+}
+int convertir_fecha(char fecha[12])
+{
+	char dia[2],mes[2],anho[4];
+	int sol,a,m,d;
+
+				dia[0]=fecha[0];
+				dia[1]=fecha[1];
+				mes[0]=fecha[3];
+				mes[1]=fecha[4];
+				anho[0]=fecha[6];
+				anho[1]=fecha[7];
+				anho[2]=fecha[8];
+				anho[3]=fecha[9];
+				d=chartoint(dia);
+				m=chartoint(mes);
+				a=chartoint(anho);
+
+				sol=a*10000+d+m*100;
+				return sol;
+}
+
+//EXISTENCIAS
+bool existe_producto(int n)
+{
+	bool k=false;
+	regProducto reg;
+	FILE*ptr;
+	ptr=fopen("producto.dat","rb");
+	if(ptr!=NULL)
+	{
+		fread(&reg,sizeof(reg),1,ptr);
+		while((feof(ptr)==false)&&(k==false))
+		{
+			if(reg.idProd==n)
+			{
+				k=true;
+			}
+			fread(&reg,sizeof(reg),1,ptr);
+		}
+		fclose(ptr);
+	}
+	else
+	{
+		cout << "El archivo no existe " ;
+	}
+	return k;
+}
+bool existe_vendedor(int n)
+{
+	
+	regVendedor reg;
+	FILE*ptr;
+	bool k=false;
+	ptr=fopen("vendedor.dat","rb");
+	if(ptr!=NULL)
+	{
+		fread(&reg,sizeof(reg),1,ptr);
+		while(feof(ptr)==false)
+		{
+			if(reg.idVend==n)
+			{
+				k=true;
+			}
+			fread(&reg,sizeof(reg),1,ptr);
+		}
+		fclose(ptr);
+	}
+	else
+	{
+		cout << "El archivo no existe ";
+	}
+	return k;
+}
+bool existe_cliente(int n)
+{
+	bool k=false;
+	regCliente reg;
+	FILE*ptr;
+	ptr=fopen("cliente.dat","rb");
+	if(ptr!=NULL)
+	{
+		fread(&reg,sizeof(reg),1,ptr);
+		while(feof(ptr)==false)
+		{
+			if(reg.idCliente==n)
+			{
+				k=true;
+			}
+			fread(&reg,sizeof(reg),1,ptr);
+		}
+		fclose(ptr);
+	}
+	else
+	{
+		cout << "El archivo no existe ";
+	}
+	return k;
+}
+
+//STOCK
+void Aumenta_stock_producto(int cantidad, int prod)
+{
+	FILE*ptr;
+	regProducto reg;
+	int c=1;
+	ptr=fopen("producto.dat","r+b");
+	if(ptr!=NULL)
+	{
+		fread(&reg,sizeof(reg),1,ptr);
+		while((feof(ptr)==false)&&(reg.idProd!=prod))
+		{
+			c++;
+			fread(&reg,sizeof(reg),1,ptr);
+		}
+		rewind(ptr);
+		fseek(ptr,(c-1)*sizeof(reg),SEEK_SET);
+		fread(&reg,sizeof(reg),1,ptr);
+		reg.stock=reg.stock+cantidad;
+		fseek(ptr,(c-1)*sizeof(reg),SEEK_SET);
+		fwrite(&reg,sizeof(reg),1,ptr);
+	}
+	fclose(ptr);
+}
+void Reducir_stock(int cantidad,int prod)
+{
+	FILE *ptr;
+	regProducto reg;
+	int c=1;
+	ptr=fopen("producto.dat","r+b");
+	if(ptr!=NULL)
+	{
+		fread(&reg,sizeof(reg),1,ptr);
+		while(feof(ptr)==false && reg.idProd!=prod)
+		{
+			c++;
+			fread(&reg,sizeof(reg),1,ptr);
+		}
+		rewind(ptr);
+		fseek(ptr,(c-1)*sizeof(reg),SEEK_SET);
+		fread(&reg,sizeof(reg),1,ptr);
+		reg.stock=reg.stock-cantidad;
+		fseek(ptr,(c-1)*sizeof(reg),SEEK_SET);
+		fwrite(&reg,sizeof(reg),1,ptr);
+	}
+	fclose(ptr);
+}
+bool ReducirStockProducto(int cantidad,int prod)
+{
+	regProducto reg;
+	FILE *ptr; 
+	ptr= fopen("producto.dat","r+b");
+	bool puede = true;
+	if(ptr!=NULL)
+	{ 
+		fread(&reg,sizeof(reg),1,ptr);
+		while(!feof(ptr))
+		{
+			if(reg.idProd == prod)
+			{
+				reg.stock= reg.stock - cantidad;
+				if(reg.stock < 0)
+				{
+					puede = false;
+					cout<<endl<<"error: insuficiente stock"<<endl;
+					break;
+				}
+				fseek(ptr,sizeof(reg)*(-1),SEEK_CUR);
+				fwrite(&reg,sizeof(reg),1,ptr);
+				break;
+			}
+			fread(&reg,sizeof(reg),1,ptr);
+		}
+		fclose(ptr);
+	}
+	else
+	{
+		cout <<"El Archivo no existe";
+	}
+	return puede;
+}
+
+//OBTENER
+regProducto obtener_producto(int id)
+{
+	FILE*ptr;
+	regProducto reg;
+	ptr=fopen("producto.dat","rb");
+	if(ptr!=NULL);
+	{
+		fread(&reg,sizeof(reg),1,ptr);
+		while((feof(ptr)==false)&&(reg.idProd!=id))
+		{
+			fread(&reg,sizeof(reg),1,ptr);
+		}
+		fclose(ptr);
+	}
+	return reg;
+}
+regCliente obtener_cliente(int id)
+{
+	FILE*ptr;
+	regCliente reg;
+	ptr=fopen("cliente.dat","rb");
+	if(ptr!=NULL)
+	{
+		fread(&reg,sizeof(reg),1,ptr);
+		while((feof(ptr)==false)&&(reg.idCliente!=id))
+		{
+			fread(&reg,sizeof(reg),1,ptr);
+		}
+		fclose(ptr);
+	}
+	return reg;
+}
+
+//DATOS PRODUCTOS
+int GenerarIdProd()
+{
+	FILE*ptr;
+	regProducto reg;
+	int n;
+	ptr=fopen("producto.dat","rb");
+	if(ptr!=NULL)
+	{
+		fseek(ptr,-sizeof(reg),SEEK_END);
+		fread(&reg,sizeof(reg),1,ptr);
+		if(feof(ptr)==false)
+		{
+			n=reg.idProd+1;
+		}
+		else
+		{
+			n=1;
+		}
+		fclose(ptr);
+	}
+	return(n);
+}
+int IdProd()
+{
+	int n;
+	cout << "Ingrese el id del producto: ";
+	cin >> n;
+	return n;
+}
+void nombreProducto(char nom[20])
+{
+	do
+	{
+		do
+		{
+			cout << "Nombre: " ;
+			gets(nom);
+		}while(strlen(nom)==0);
+	}while(verif_solo_letras(nom)==false);
+}
+
+//DATOS CLIENTES
+int GenerarIdCliente()
+{
+	FILE*ptr;
+	regCliente reg;
+	int n;
+	ptr=fopen("cliente.dat","rb");
+	if(ptr!=NULL)
+	{
+		fseek(ptr,-sizeof(reg),SEEK_END);
+		fread(&reg,sizeof(reg),1,ptr);
+		if(feof(ptr)==false)
+		{
+			n=reg.idCliente+1;
+		}
+		else
+		{
+			n=1;
+		}
+		fclose(ptr);
+	}
+	return(n);
+}
+int IdCliente()
+{
+	int n;
+	cout<<endl<<"Ingresar Id del Cliente: ";
+	cin >> n;
+
+	return(n);
+
+}
+void nombreCliente(char nom[30])
+{
+	cout << "Nombre: ";
+	do
+	{
+		do
+		{
+			gets(nom);
+		}while(strlen(nom)==0);
+	}while(verif_solo_letras(nom)==false);
+}
+void emailCliente(char nom[80])
+{
+	do
+	{
+		do
+		{
+			cout << "E-mail: ";
+			gets(nom);
+		}while(strlen(nom)==0);
+	}while(validaremail(nom)==false);
+}
+void telefonoCliente(char nom[12])
+{
+	do
+	{
+		do
+		{
+			cout << "Telefono: ";
+			gets(nom);
+		}while(strlen(nom)==0);
+	}while(verif_solo_numeros(nom)==false);
+}
+void nitCliente(char nom[30])
+{
+	do
+	{
+		do
+		{
+			cout << "NIT: ";
+			gets(nom);
+	
+		}while(strlen(nom)==0);
+	}while(verif_solo_numeros(nom)==false);
+}
+
+//DATOS VENDEDOR
+int GenerarIdVendedor()
+{
+	FILE*ptr;
+	regVendedor reg;
+	int n;
+	ptr=fopen("vendedor.dat","rb");
+	if(ptr!=NULL)
+	{
+		fseek(ptr,-sizeof(reg),SEEK_END);
+		fread(&reg,sizeof(reg),1,ptr);
+		if(feof(ptr)==false)
+		{
+			n=reg.idVend+1;
+		}
+		else
+		{
+			n=1;
+		}
+		fclose(ptr);
+	}
+	return(n);
+}
+int idVendedor()
+{
+	int n;
+	do
+	{
+		cout <<endl << "Ingresar el Id del vendedor: ";
+		cin >> n;
+	}while(existe_vendedor(n)==false);
+	return n;
+}
+void nombreVendedor(char nom[30])
+{
+	do
+	{
+		do
+		{
+			cout << "Nombre: ";
+			gets(nom);
+		}while(strlen(nom)==0);
+	}while(verif_solo_letras(nom)==false);
+}
+void emailVendedor(char nom[80])
+{
+	do
+	{
+		do
+		{
+			cout << "E-mail: ";
+			gets(nom);
+		}while(strlen(nom)==0);
+	}while(validaremail(nom)==false);
+}
+void telefonoVendedor(char nom[12])
+{
+	do
+	{
+		do
+		{
+			cout << "Telefono: ";
+			gets(nom);
+		}while(strlen(nom)==0);
+	}while(verif_solo_numeros(nom)==false);
+}
+
+//DATOS VENTA
+int GenerarIdVenta()
+{
+	FILE*ptr;
+	regVenta reg;
+	int n;
+	ptr=fopen("venta.dat","rb");
+	if(ptr!=NULL)
+	{
+		fseek(ptr,-sizeof(reg),SEEK_END);
+		fread(&reg,sizeof(reg),1,ptr);
+		if(feof(ptr)==false)
+		{
+			n=reg.idVenta+1;
+		}
+		else
+		{
+			n=1;
+		}
+		fclose(ptr);
+	}
+	return(n);
+}
+int idVenta()
+{
+	int n;
+	cout << "Ingrese el id de la venta: ";
+	cin >> n;
+	return n;
+}
+int cantidadVenta()
+{
+	int n;
+	do
+	{
+		cout << "Cantidad: ";
+		cin >> n;
+	}while(n<0);
+	return n;
+}
+void precioUnitVenta(float n)
+{
+	do
+	{
+		cout << "Precio Unitario: ";
+		cin >> n;
+	}while(n<0);
+}
+
+
+//DATOS COMPRA
+int GenerarIdCompra()
+{
+	FILE*ptr;
+	regCompra reg;
+	int n;
+	ptr=fopen("compra.dat","rb");
+	if(ptr!=NULL)
+	{
+		fseek(ptr,-sizeof(reg),SEEK_END);
+		fread(&reg,sizeof(reg),1,ptr);
+		if(feof(ptr)==false)
+		{
+			n=reg.idCompra+1;
+		}
+		else
+		{
+			n=1;
+		}
+		fclose(ptr);
+	}
+	return(n);
+}
+void generar_fecha(char cad[12])
+{
+	cout << "Ingrese la fecha DD/MM/AA: ";
+	do
+	{
+		gets(cad);
+	}while(verificar_fecha(cad)==false);
+}
+int idCompra()
+{
+	int n;
+	cout << "Ingrese el id de la compra: ";
+	cin >> n;
+	return n;
+}
+int cantidadCompra()
+{
+	int n;
+	do{
+		cout << "Cantidad: ";
+		cin >> n;
+	}while(n<0);
+
+	return n;
+}
+
+//AGREGAR
+void agregar_producto()
+{
+	int c;
+	regProducto reg;
+	FILE*ptr;
+	ptr=fopen("producto.dat","ab");
+	cout << " AGREGAR PRODUCTO " << endl;
+	reg.idProd=GenerarIdProd();
+	nombreProducto(reg.nombre);
+	reg.stock=0;
+	cout << "Precio: ";
+	cin >> reg.precio;
+	reg.estado='A';
+	fwrite(&reg,sizeof(reg),1,ptr);
+	fclose(ptr);
+}
+void agregar_cliente()
+{
+	regCliente reg;
+	FILE*ptr;
+	ptr=fopen("cliente.dat","ab");
+	cout << " AGREGAR CLIENTE " << endl;
+	reg.idCliente=GenerarIdCliente();
+	nombreCliente(reg.nombre);
+	emailCliente(reg.email);
+	telefonoCliente(reg.telefono);
+	nitCliente(reg.nit);
+	reg.estado='A';
+	fwrite(&reg,sizeof(reg),1,ptr);
+	fclose(ptr);
+}
+void agregar_vendedor()
+{
+	regVendedor reg;
+	FILE*ptr;
+	ptr=fopen("vendedor.dat","ab");
+	cout << " AGREGAR VENDEDOR " << endl;
+	reg.idVend=GenerarIdVendedor();
+	nombreVendedor(reg.nombre);
+	emailVendedor(reg.email);
+	telefonoVendedor(reg.telefono);
+	reg.estado='A';
+	fwrite(&reg,sizeof(reg),1,ptr);
+	fclose(ptr);
+}
+void agregar_venta()
+{
+	regVenta reg;
+	regProducto reg1;
+	FILE*ptr;
+	ptr=fopen("venta.dat","ab");
+	cout << " AGREGAR VENTA "  << endl;
+	reg.idVenta=GenerarIdVenta();
+	do
+	{
+		reg.idProd=IdProd();
+		
+	}while(existe_producto(reg.idProd)==false);
+	system("cls");
+	cout << endl << "IdProd: " <<reg.idProd << endl;
+	generar_fecha(reg.fecha);
+	do
+	{
+		reg.cantidad=cantidadVenta();
+	}while( ReducirStockProducto(reg.cantidad,reg.idProd)==false);
+	//precioUnitVenta(reg.precioUnit);
+	reg1=obtener_producto(reg.idProd);
+	reg.precioUnit=reg1.precio*1.25;
+	do
+	{
+		reg.idVend=idVendedor();
+	}while(existe_vendedor(reg.idVend)==false);
+	do
+	{
+		reg.idCliente=IdCliente();
+	}while(existe_cliente(reg.idCliente)==false);
+	reg.estado='A';
+	
+	fwrite(&reg,sizeof(reg),1,ptr);
+	fclose(ptr);
+}
+void agregar_compra()
+{
+	regCompra reg;
+	FILE*ptr;
+	ptr=fopen("compra.dat","ab");
+	cout << " AGREGAR COMPRA " << endl;
+	reg.idCompra=GenerarIdCompra();
+	generar_fecha(reg.fecha);
+	reg.cantidad=cantidadCompra();
+	reg.idProd=IdProd();
+	Aumenta_stock_producto(reg.cantidad,reg.idProd);
+	reg.estado='A';
+	fwrite(&reg,sizeof(reg),1,ptr);
+	fclose(ptr);
+}
+
+//BORRAR
+void eliminar_producto()
+{
+	int op,id;
+	regProducto reg;
+	FILE*ptr;
+	ptr=fopen("producto.dat","r+b");
+	id=reg.idProd;
+	if(ptr!=NULL)
+	{
+		fread(&reg,sizeof(reg),1,ptr);
+		while(feof(ptr)==false)
+		{
+			if((reg.idProd=id)&&(reg.estado=='A'))
+			{
+				fseek(ptr,(-1)*sizeof(reg),SEEK_CUR);
+				reg.estado='E';
+				fwrite(&reg,sizeof(reg),1,ptr);
+				break;
+			}
+			fread(&reg,sizeof(reg),1,ptr);
+
+		}
+		fclose(ptr);
+	}
+	else
+	{
+		cout << "El registro fue eliminado " << endl;
+	}
+	
+}
+void eliminar_cliente()
+{
+	int id;
+	regCliente reg;
+	FILE*ptr;
+	ptr=fopen("cliente.dat","r+b");
+	id=IdCliente();
+	if(ptr!=NULL)
+	{
+		fread(&reg,sizeof(reg),1,ptr);
+		while(feof(ptr)==false)
+		{
+			if((id==reg.idCliente)&&(reg.estado=='A'))
+			{
+				fseek(ptr,(-1)*sizeof(reg),SEEK_CUR);
+				reg.estado='E';
+				fwrite(&reg,sizeof(reg),1,ptr);
+				break;
+			}
+			fread(&reg,sizeof(reg),1,ptr);
+		}
+		fclose(ptr);
+	}
+	else
+	{
+		cout << "El registro ya fue eliminado " << endl;
+	}
+}
+void eliminar_vendedor()
+{
+	int id;
+	regVendedor reg;
+	FILE*ptr;
+	ptr=fopen("vendedor.dat","r+b");
+	id=idVendedor();
+	if(ptr!=NULL)
+	{
+		fread(&reg,sizeof(reg),1,ptr);
+		while(feof(ptr)==false)
+		{
+			if((id=reg.idVend)&&(reg.estado='A'))
+			{
+				fseek(ptr,(-1)*sizeof(reg),SEEK_CUR);
+				reg.estado='E';
+				fwrite(&reg,sizeof(reg),1,ptr);
+				break;
+			}
+			fread(&reg,sizeof(reg),1,ptr);
+		}
+		fclose(ptr);
+	}
+	else
+	{
+		cout << "El registro ya fue eliminado " << endl;
+	}
+}
+void eliminar_venta()
+{
+	regVenta reg;
+	int id;
+	id=idVenta();
+	FILE*ptr;
+	ptr=fopen("venta.dat","r+b");
+	if(ptr!=NULL)
+	{
+		fread(&reg,sizeof(reg),1,ptr);
+		while(feof(ptr)==false)
+		{
+			if((id==reg.idVenta)&&(reg.estado=='A'))
+			{
+				fseek(ptr,(-1)*sizeof(reg),SEEK_CUR);
+				reg.estado=='E';
+				fwrite(&reg,sizeof(reg),1,ptr);
+				break;
+			}
+			fread(&reg,sizeof(reg),1,ptr);
+		}
+		fclose(ptr);
+	}
+	else
+	{
+		cout << "El archivo ha sido eliminado ";
+	}
+}
+void eliminar_compra()
+{
+	int id;
+	regCompra reg;
+	id=idCompra();
+	FILE*ptr;
+	ptr=fopen("compra.dat","r+b");
+	if(ptr!=NULL)
+	{
+		fread(&reg,sizeof(reg),1,ptr);
+		while(feof(ptr)==false)
+		{
+			if((id==reg.idCompra)&&(reg.estado=='A'))
+			{
+				fseek(ptr,(-1)*sizeof(reg),SEEK_CUR);			
+				reg.estado='E';
+				break;
+			}
+			fread(&reg,sizeof(reg),1,ptr);
+		}
+		fclose(ptr);
+	}
+	else
+	{
+		cout << "El archivo no esxiste ";
+	}
+}
+
+//MODIFICAR
+void modificar_producto()
+{
+	int op,id;
+	regProducto reg;
+	id=IdProd();
+	FILE*ptr;
+	ptr=fopen("producto.dat","r+b");
+	if(ptr!=NULL)
+	{
+		fread(&reg,sizeof(reg),1,ptr);
+		while(feof(ptr)==false)
+		{
+			if((reg.idProd==id)&&(reg.estado=='A'))
+			{
+				fseek(ptr,(-1)*sizeof(reg),SEEK_CUR);
+				nombreProducto(reg.nombre);
+				cout << "Precio: ";
+				cin >> reg.precio;
+				fwrite(&reg,sizeof(reg),1,ptr);
+				break;
+			}
+			fread(&reg,sizeof(reg),1,ptr);
+		}
+		fclose(ptr);
+	}
+
+}
+void modificar_cliente()
+{
+	int op,id;
+	regCliente reg;
+	id=IdCliente();
+	FILE*ptr;
+	ptr=fopen("cliente.dat","r+b");
+	if(ptr!=NULL)
+	{
+		fread(&reg,sizeof(reg),1,ptr);
+		while(feof(ptr)==false)
+		{
+			if((reg.idCliente==id)&&(reg.estado=='A'))
+			{
+				fseek(ptr,(-1)*sizeof(reg),SEEK_CUR);
+				nombreCliente(reg.nombre);
+				emailCliente(reg.email);
+				telefonoCliente(reg.telefono);
+				nitCliente(reg.nit);
+				
+				fwrite(&reg,sizeof(reg),1,ptr);	
+				break;
+			
+
+			}
+			fread(&reg,sizeof(reg),1,ptr);
+		}
+		fclose(ptr);
+	}
+}
+void modificar_vendedor()
+{
+	int id;
+	regVendedor reg;
+	id=idVendedor();
+	FILE*ptr;
+	ptr=fopen("vendedor.dat","r+b");
+	if(ptr!=NULL)
+	{
+		fread(&reg,sizeof(reg),1,ptr);
+		while(feof(ptr)==false)
+		{
+			if((reg.idVend==id)&&(reg.estado=='A'))
+			{
+				fseek(ptr,(-1)*sizeof(reg),SEEK_CUR);
+				nombreVendedor(reg.nombre);
+				emailVendedor(reg.email);
+				telefonoVendedor(reg.telefono);
+				fwrite(&reg,sizeof(reg),1,ptr);
+				break;
+			}
+			fread(&reg,sizeof(reg),1,ptr);
+		}
+		fclose(ptr);
+	}
+}
+void modificar_venta()
+{
+	regVenta reg;
+	int id;
+	id=idVenta();
+	FILE*ptr;
+	ptr=fopen("venta.dat","r+b");
+	if(ptr!=NULL)
+	{
+		fread(&reg,sizeof(reg),1,ptr);
+		while(feof(ptr)==false)
+		{
+			if((id=reg.idVenta)&&(reg.estado=='A'))
+			{
+				fseek(ptr,(-1)*sizeof(reg),SEEK_CUR);
+				reg.cantidad=cantidadVenta();
+				precioUnitVenta(reg.precioUnit);
+					do
+					{
+						reg.idProd=IdProd();
+					}while(existe_producto(reg.idProd)==false);
+					do
+					{
+						reg.idVend=idVendedor();
+					}while(existe_vendedor(reg.idVend)==false);
+					do
+					{
+						reg.idCliente=IdCliente();
+					}while(existe_cliente(reg.idCliente)==false);
+
+					fwrite(&reg,sizeof(reg),1,ptr);
+					break;
+			}
+			fread(&reg,sizeof(reg),1,ptr);
+		}
+		fclose(ptr);
+	}
+}
+void modificar_compra()
+{
+	int id,c;
+	regCompra reg;
+	id=idCompra();
+	FILE*ptr;
+	ptr=fopen("compre.dat","r+b");
+	if(ptr!=NULL)
+	{
+		fread(&reg,sizeof(reg),1,ptr);
+		while(feof(ptr)==false)
+		{
+			if((id=reg.idCompra)&&(reg.estado=='A'))
+			{
+				fseek(ptr,(-1)*sizeof(reg),SEEK_CUR);
+				reg.cantidad=cantidadCompra();
+				do
+				{
+					reg.idProd=IdProd();
+				}while(existe_producto(reg.idProd)==false);
+				fwrite(&reg,sizeof(reg),1,ptr);
+			}
+			fread(&reg,sizeof(reg),1,ptr);
+		}
+		fclose(ptr);
+	}
+	else
+	{
+		cout << "El archivo no existe ";
+	}
+}
+
+//REPORTE
+void mostrar_producto()
+{
+	regProducto reg;
+	int c=0;
+	FILE*ptr;
+	ptr=fopen("producto.dat", "rb");
+	if(ptr!=NULL)
+	{
+		cout << "\n			PRODUCTOS		" << endl; 
+ 		cout << "\n----------------------------------------------------------------" << endl; 
+ 		cout << "\nIdProd.		Nombre		Stock		Precio	 " << endl; 
+ 		cout << "\n----------------------------------------------------------------" << endl; 
+		fread(&reg, sizeof(reg),1,ptr);
+		while(feof(ptr)==false)
+		{
+			if(reg.estado=='A')
+			{
+				c++;
+				cout << endl << reg.idProd  << "		" << reg.nombre << "		" << reg.stock << "		" << reg.precio << endl;	
+			}
+			fread(&reg,sizeof(reg),1,ptr);
+		}
+		fclose (ptr);
+	}
+	else 
+	{
+		cout << "ERROR!! El archivo no existe. " << endl;
+	}
+}
+void mostrar_cliente()
+{
+	FILE*ptr;
+	regCliente reg;
+	ptr=fopen("cliente.dat","rb");
+	if(ptr!=NULL)
+	{
+		cout<<endl<<"				CLIENTES "<<endl;
+		cout << "\n-----------------------------------------------------------------------------------" << endl;
+		cout<<"\nID        Nombre           NIT           Telefono            Correo" << endl;
+		cout << "\n-----------------------------------------------------------------------------------" << endl;
+		fread(&reg,sizeof(reg),1,ptr);
+
+		while(feof(ptr)==false)
+		{
+
+			if(reg.estado=='A')
+			{
+				cout<<reg.idCliente<<"	 "<<reg.nombre<<"	"<<reg.nit<<"		"<<reg.telefono<<"		"<<reg.email << endl;
+			}
+			else
+			{
+				cout << "El registro fue eliminado ";
+			}
+			fread(&reg,sizeof(reg),1,ptr);
+		}
+		fclose(ptr);
+		system("pause");
+		system("cls");
+	}
+	else
+	{
+		cout<<"NO EXISTE ARCHIVO";
+	}
+	cout<<endl;
+}		
+void mostrar_vendedor()
+{
+	regVendedor reg;
+	FILE*ptr;
+	ptr=fopen("vendedor.dat", "rb");
+	if(ptr!=NULL)
+	{
+		cout<<endl<<"				VENDEDOR		"<<endl;
+		cout << "\n----------------------------------------------------------------------------------" << endl;
+		cout<<"\nID		  Nombre		 Telefono		  E-mail" << endl;
+		cout << "\n----------------------------------------------------------------------------------" << endl;
+		fread(&reg,sizeof(reg),1,ptr);
+		while(feof(ptr)==false)
+		{
+			if(reg.estado=='A')
+			{
+				cout << reg.idVend << "		" << reg.nombre << "		" << reg.telefono << "		" << reg.email << endl ;
+			}
+			else 
+			{
+				cout << "El registro fue eliminado ";
+			}
+			fread(&reg,sizeof(reg),1,ptr);
+		}
+		fclose(ptr);
+		system("pause");
+		system("cls");
+	}
+	else
+	{
+		cout << "NO EXISTE ARCHIVO ";
+	}
+	cout << endl;
+}
+void mostrar_venta()
+{
+	regVenta reg;
+	FILE*ptr;
+	ptr=fopen("venta.dat","rb");
+	if(ptr!=NULL)
+	{
+		cout<<endl<<"						VENTA		"<<endl;
+		cout << "\n---------------------------------------------------------------------------------------------------" << endl;
+		cout<<"\nIDVenta        Fecha          Cantidad        PrecioUnit	 IdProd		IdVenta		IdCliente" << endl;
+		cout << "\n---------------------------------------------------------------------------------------------------" << endl;
+		fread(&reg,sizeof(reg),1,ptr);
+		while(feof(ptr)==false)
+		{
+			if(reg.estado=='A')
+			{
+				cout << reg.idVenta << "		" << reg.fecha << " 	 " << reg.cantidad << "		 " << reg.precioUnit << "	  	   " << reg.idProd << "		  " << reg.idVenta << "		  " << reg.idCliente << endl;
+			}
+			fread(&reg,sizeof(reg),1,ptr);
+		}
+		fclose(ptr);
+	}
+	else
+	{
+		cout << "NO EXISTE ARCHIVO ";
+	}
+	cout << endl;
+}
+void mostrar_compra()
+{
+	regCompra reg;
+	FILE*ptr;
+	ptr=fopen("compra.dat","rb");
+	if(ptr!=NULL)
+	{
+		cout<<endl<<"			COMPRA		"<<endl;
+		cout << "\n---------------------------------------------------------------" << endl;
+		cout<<"\nIdCompra	 Fecha          Cantidad        IdProd	" << endl;
+		cout << "\n----------------------------------------------------------------" << endl;
+		fread(&reg,sizeof(reg),1,ptr);
+		while(feof(ptr)==false)
+		{
+			if(reg.estado=='A')
+			{
+				cout << reg.idCompra << "		" << reg.fecha << " 	 " << reg.cantidad << "		 " << reg.idProd << endl;
+			}
+			fread(&reg,sizeof(reg),1,ptr);
+		}
+		fclose(ptr);
+		system("pause");
+		system("cls");
+	}
+	else
+	{
+		cout << "No existe el archivo ";
+	}
+}
+
+//FUNCIONES PARA REPORTES
+void ultima_fecha_compra(char fecha2[])
+{
+	FILE*ptr;
+	regCompra reg;
+	ptr=fopen("compra.dat","rb");
+	if(ptr!=NULL)
+	{
+		fseek(ptr,(-1)*sizeof(reg),SEEK_END);
+		fread(&reg,sizeof(reg),1,ptr);
+		if(feof(ptr)==false)
+		{
+			strcpy(fecha2,reg.fecha);
+		}
+		fclose(ptr);
+	}
+}
+void primera_fecha_compra(char fecha1[])
+{
+	FILE*ptr;
+	regCompra reg;
+	ptr=fopen("compra.dat","rb");
+	if(ptr!=NULL)
+	{
+		fread(&reg,sizeof(reg),1,ptr);
+		if(feof(ptr)==false)
+		{
+			strcpy(fecha1,reg.fecha);
+		}
+		fclose(ptr);
+	}
+}
+void ultima_fecha_venta(char fecha2[]){
+	FILE *ptr;
+	regVenta reg;
+	ptr=fopen("venta.dat","rb");
+	if(ptr!=NULL){
+		fseek(ptr,(-1)*sizeof(reg),SEEK_END);
+		fread(&reg,sizeof(reg),1,ptr);
+		if(feof(ptr)==false){
+			strcpy(fecha2,reg.fecha);
+		}
+	}
+	fclose(ptr);
+}
+void primera_fecha_venta(char fecha1[]){
+	FILE *ptr;
+	regVenta reg;
+	ptr=fopen("venta.dat","rb");
+	if(ptr!=NULL){
+		fread(&reg,sizeof(reg),1,ptr);
+		if(feof(ptr)==false){
+			strcpy(fecha1,reg.fecha);
+		}
+	}
+	fclose(ptr);
+}
+void liter(int n)
+{
+	int m;
+	if(n>=1000000)
+	{
+		m=n/1000000;
+		liter(m);
+		cout<<"millones ";
+		n=n%1000000;
+	}
+	if(n>=1000)
+	{
+		m=n/1000;
+		liter(m);
+		cout<<" mil ";
+		n=n%1000;
+	}
+	if(n>=100)
+	{
+		m=n/100;
+		switch(m)
+		{
+			case 1:
+			cout<<"ciento ";
+			break;
+			case 2:
+			cout<<"doscientos ";
+			break;
+			case 3:
+			cout<<"trescientos ";
+			break;
+			case 4:
+			cout<<"cuatrocientos ";
+			break;
+			case 5:
+			cout<<"quinientos ";
+			break;
+			case 6:
+			cout<<"seicientos ";
+			break;
+			case 7:
+			cout<<"setecientos ";
+			break;
+			case 8:
+			cout<<"ochocientos ";
+			break;
+			case 9:
+			cout<<"novecientos ";
+			break;
+		}
+		n=n%100;
+	}
+
+	if(n>0)
+	{
+		switch(n)
+		{
+			case 1:
+			cout<<"un ";
+			break;
+			case 2:
+			cout<<"dos ";
+			break;
+			case 3:
+			cout<<"tres ";
+			break;
+			case 4:
+			cout<<"cuatro ";
+			break;
+			case 5:
+			cout<<"cinco ";
+			break;
+			case 6:
+			cout<<"seis ";
+			break;
+			case 7:
+			cout<<"siete ";
+			break;
+			case 8:
+			cout<<"ocho ";
+			break;
+			case 9:
+			cout<<"nueve ";
+			break;
+			case 10:
+			cout<<"diez ";
+			break;
+			case 11:
+			cout<<"once ";
+			break;
+			case 12:
+			cout<<"doce ";
+			break;
+			case 13:
+			cout<<"trece ";
+			break;
+			case 14:
+			cout<<"catorce ";
+			break;
+			case 15:
+			cout<<"quince ";
+			break;
+			case 16:
+			cout<<"dieciseis ";
+			break;
+			case 17:
+			cout<<"diecisiete ";
+			break;
+			case 18:
+			cout<<"dieciocho ";
+			break;
+			case 19:
+			cout<<"diecinueve";
+			break;
+			case 20:
+			cout<<"veinte";
+			break;
+			case 21:
+			cout<<"ventiun";
+			break;
+			case 22:
+			cout<<"veintidos";
+			break;
+			case 23:
+			cout<<"veintitres";
+			break;
+			case 24:
+			cout<<"veinticuatro";
+			break;
+			case 25:
+			cout<<"veinticinco";
+			break;
+			case 26:
+			cout<<"veitiseis";
+			break;
+			case 27:
+			cout<<"veintisiete";
+			break;
+			case 28:
+			cout<<"ventiocho";
+			break;
+			case 29:
+			cout<<"ventinueve";
+			break;
+			case 30:
+			cout<<"treinta";
+			break;
+			case 31:
+			cout<<"treinta y un";
+			break;
+			case 32:
+			cout<<"treinta y dos";
+			break;
+			case 33:
+			cout<<"treinta y tres";
+			break;
+			case 34:
+			cout<<"treinta y cuatro";
+			break;
+			case 35:
+			cout<<"treinta y cinco";
+			break;
+			case 36:
+			cout<<"treinta y seis";
+			break;
+			case 37:
+			cout<<"treinta y siete";
+			break;
+			case 38:
+			cout<<"treinta y ocho";
+			break;
+			case 39:
+			cout<<"treinta y nueve";
+			break;
+			case 40:
+			cout<<"cuarenta";
+			break;
+			case 41:
+			cout<<"cuarenta y un";
+			break;
+			case 42:
+			cout<<"cuarenta y dos";
+			break;
+			case 43:
+			cout<<"cuarenta y tres";
+			break;
+			case 44:
+			cout<<"cuarenta y cuatro";
+			break;
+			case 45:
+			cout<<"cuarenta y cinco";
+			break;
+			case 46:
+			cout<<"cuarenta y seis";
+			break;
+			case 47:
+			cout<<"cuarenta y siete";
+			break;
+			case 48:
+			cout<<"cuarenta y ocho";
+			break;
+			case 49:
+			cout<<"cuarenta y nueve";
+			break;
+			case 50:
+			cout<<"cincuenta";
+			break;
+			case 51:
+			cout<<"cincuenta y un";
+			break;
+			case 52:
+			cout<<"cincuenta y dos";
+			break;
+			case 53:
+			cout<<"cincuenta y tres";
+			break;
+			case 54:
+			cout<<"cincuenta y cuatro";
+			break;
+			case 55:
+			cout<<"cincuenta y cinco";
+			break;
+			case 56:
+			cout<<"cincuenta y seis";
+			break;
+			case 57:
+			cout<<"cincuenta y siete";
+			break;
+			case 58:
+			cout<<"cincuenta y ocho";
+			break;
+			case 59:
+			cout<<"cincuenta y nueve";
+			break;
+			case 60:
+			cout<<"sesenta";
+			break;
+			case 61:
+			cout<<"sesenta y un";
+			break;
+			case 62:
+			cout<<"sesenta y dos";
+			break;
+			case 63:
+			cout<<"sesenta y tres";
+			break;
+			case 64:
+			cout<<"sesenta y cuatro";
+			break;
+			case 65:
+			cout<<"sesenta y cinco";
+			break;
+			case 66:
+			cout<<"sesenta y seis";
+			break;
+			case 67:
+			cout<<"sesenta y siete";
+			break;
+			case 68:
+			cout<<"sesenta y ocho";
+			break;
+			case 69:
+			cout<<"sesenta y nueve";
+			break;
+			case 70:
+			cout<<"setenta";
+			break;
+			case 71:
+			cout<<"setenta y un";
+			break;
+			case 72:
+			cout<<"setenta y dos";
+			break;
+			case 73:
+			cout<<"setenta y tres";
+			break;
+			case 74:
+			cout<<"setenta y cuatro";
+			break;
+			case 75:
+			cout<<"setenta y cinco";
+			break;
+			case 76:
+			cout<<"setenta y seis";
+			break;
+			case 77:
+			cout<<"setenta y siete";
+			break;
+			case 78:
+			cout<<"setenta y ocho";
+			break;
+			case 79:
+			cout<<"setenta y nueve";
+			break;
+			case 80:
+			cout<<"ochenta";
+			break;
+			case 81:
+			cout<<"ochenta y un";
+			break;
+			case 82:
+			cout<<"ochenta y dos";
+			break;
+			case 83:
+			cout<<"ochenta y tres";
+			break;
+			case 84:
+			cout<<"ochenta y cuatro";
+			break;
+			case 85:
+			cout<<"ochenta y cinco";
+			break;
+			case 86:
+			cout<<"ochenta y seis";
+			break;
+			case 87:
+			cout<<"ochenta y siete";
+			break;
+			case 88:
+			cout<<"ochenta y ocho";
+			break;
+			case 89:
+			cout<<"ochenta y nueve";
+			break;
+			case 90:
+			cout<<"noventa";
+			break;
+			case 91:
+			cout<<"noventa y un";
+			break;
+			case 92:
+			cout<<"noventa y dos";
+			break;
+			case 93:
+			cout<<"noventa y tres";
+			break;
+			case 94:
+			cout<<"noventa y cuatro";
+			break;
+			case 95:
+			cout<<"noventa y cinco";
+			break;
+			case 96:
+			cout<<"noventa y seis";
+			break;
+			case 97:
+			cout<<"noventa y siete";
+			break;
+			case 98:
+			cout<<"noventa y ocho";
+			break;
+			case 99:
+			cout<<"noventa y nueve";
+
+		}
+	}
+}
+int mainliter(float n)
+{
+	float aux;
+	int part_ent,part_decim;
+	/*SEPARACION PARTE ENTERA
+	igual funciona: 
+	part_ent = n;
+	con esto separas la aparte entera
+	*/
+	part_ent = int(n);
+
+	//SEPARCACION PARTE DECIMAL
+	aux = n-part_ent;
+	part_decim = aux * 100;//por 100 porque queremos los dos promeros decimales
+
+	liter(part_ent);
+	cout<<" bolivianos con ";
+	liter(part_decim);
+	cout<<" centavos";
+	cout<<"\n";
+	system("pause");
+	return 0;
+}
+
+//REPORTE
+void por_producto_compra()
+{
+	FILE *ptr;
+	int aux;
+	float total=0;
+	regCompra reg;
+	regProducto reg1;
+	aux=IdProd();
+	ptr=fopen("compra.dat","rb");
+	if(ptr!=NULL)
+	{
+		cout<<"			REPORTE DE COMPRA POR PRODUCTO	"<<endl;
+		cout<<"-----------------------------------------------------------------------------------------------------------"<<endl;
+		cout<<" IdCompra 	Fecha		  Cantidad	IdProd		 Producto	  Precio	  TOTAL"<<endl;
+		cout<<"-----------------------------------------------------------------------------------------------------------"<<endl;
+		fread(&reg,sizeof(reg),1,ptr);
+		while(feof(ptr)==false)
+		{
+			if((reg.estado=='A')&&(reg.idProd==aux))
+			{
+			reg1=obtener_producto(reg.idProd);
+			cout<<endl<<reg.idCompra<<"		"<<reg.fecha<<"	    "<<reg.cantidad<<"	 	 "<<reg.idProd<<" 		"<< reg1.nombre << "   	 " << reg1.precio << "      	" << reg1.precio*reg.cantidad;
+			total=total+(reg.cantidad*reg1.precio);
+			}
+			fread(&reg,sizeof(reg),1,ptr);
+		}
+		cout << endl << "------------------------------------------------------------------------------------------------------- " << endl;
+		cout << "El total es: " << total << endl;
+			cout << "Literal: ";
+		mainliter(total);
+		fclose(ptr);
+	} 
+	else
+	{
+		cout<<"\n El archivo no existe." << endl; 
+	}
+}
+void venta_por_cliente()
+{
+	FILE*ptr;
+	int aux;
+	float total;
+	regVenta reg;
+	regProducto reg1;
+	regCliente reg2;
+	aux=IdCliente();
+	ptr=fopen("venta.dat","rb");
+	if(ptr!=NULL)
+	{
+		cout << "		REPORTE DE VENTA POR CLIENTE " << endl;
+		cout<<"--------------------------------------------------------------------------------------------------------------------------"<<endl;
+		cout<<" IdVenta		IdProd	  Producto	IdCliente	Cantidad	Precio	 TOTAL"<<endl;
+		cout<<"---------------------------------------------------------------------------------------------------------------------------"<<endl;
+		fread(&reg,sizeof(reg),1,ptr);
+		while((feof(ptr)==false)&&(reg.idCliente==aux))
+		{
+			if((reg.estado=='A')&&(reg.idCliente==aux))
+			{
+				reg1=obtener_producto(reg.idProd);
+				reg2=obtener_cliente(reg.idCliente);
+				cout << reg.idVenta << "		" <<reg.idCliente << "		" << reg2.nombre << "		" << reg.idProd << "		" << reg1.nombre << "		" << reg.precioUnit << "		" << reg.cantidad << "		" << reg.precioUnit*reg.cantidad << endl;
+				total=total+(reg.precioUnit*reg.cantidad);
+			}
+			fread(&reg,sizeof(reg),1,ptr);
+		}
+		cout << "---------------------------------------------------------------------------------------------------------------------- " << endl;
+		cout << "El total es: " << total << endl;
+		fclose(ptr);
+	}
+	else
+	{
+		cout << "El archivo no existe!! " << endl;
+	}
+}
+void por_producto_venta()
+{
+	FILE*ptr;
+	int aux;
+	float total=0;
+	regVenta reg;
+	regProducto reg1;
+	aux=IdProd();
+	ptr=fopen("venta.dat","rb");
+	if(ptr!=NULL)
+	{
+		cout << "		REPORTE DE VENTA POR PRODUCTO " << endl;
+		cout<<"----------------------------------------------------------------------------------------------------------------"<<endl;
+		cout<<" IdVenta		Fecha		Precio	  Cantidad		IdProd		Producto	IdVendedor	IdCliente	TOTAL"<<endl;
+		cout<<"----------------------------------------------------------------------------------------------------------------"<<endl;
+		fread(&reg,sizeof(reg),1,ptr);
+		while(feof(ptr)==false)
+		{
+			if((reg.estado=='A')&&(reg.idProd==aux))
+			{
+				reg1=obtener_producto(reg.idProd);
+				cout << endl << reg.idVenta << "		" << reg.fecha << "		" << reg.precioUnit << "		" << reg.cantidad <<"		" << reg.idProd << "		" << reg1.nombre << "		" << reg.idVend << "		" << reg.idCliente<< "		" <<reg.precioUnit*reg.cantidad <<   endl;
+				total=total+(reg.precioUnit*reg.cantidad);
+			}
+			fread(&reg,sizeof(reg),1,ptr);
+		}
+		cout << "-------------------------------------------------------------------------------" << endl;
+		cout << "El precio es: " << total << endl;
+		fclose(ptr);
+	}
+	else
+	{
+		cout << "El archivo no existe!! " << endl;
+	}
+}
+void compra_por_periodo()
+{
+	FILE*ptr;
+	regCompra reg;
+	regProducto reg1;
+	ptr=fopen("compra.dat","rb");
+	float total=0;
+	int fec1,fec2,m,n,aux1,aux2,c=1;
+	char fecha1[30],fecha2[30],a[12],b[12];
+	primera_fecha_compra(fecha1);
+	ultima_fecha_compra(fecha2);
+	cout << "Primera fecha: " << fecha1 << endl;
+	cout << "Segunda fecha: " << fecha2 << endl;
+	fec1=convertir_fecha(fecha1);
+	fec2=convertir_fecha(fecha2);
+	do
+	{
+		cout << " Ingrese la primera fecha: ";
+		do
+		{
+			gets(a);
+		}while((strlen(a)==0)||(verificar_fecha(a)==false));
+		do
+		{
+			cout << "Ingresar la segunda fecha: ";
+			gets(b);
+		}while((strlen(b)==0)||(verificar_fecha(b)==false));
+		m=convertir_fecha(a);
+		n=convertir_fecha(b);
+	}while((m>n)||(m<fec1)||(n>fec2));
+	system("cls");
+	if(ptr!=NULL)
+	{
+		fread(&reg,sizeof(reg),1,ptr);
+		aux1=convertir_fecha(reg.fecha);
+		while((feof(ptr)==false)&&(aux1<m))
+		{
+			c++;
+			fread(&reg,sizeof(reg),1,ptr);
+			aux1=convertir_fecha(reg.fecha);
+		}
+	}
+	if(ptr!=NULL)
+	{
+		
+		cout<<"---------------------REPORTE COMPRA--------------------------------"<<endl;
+		cout<<"---------------------------------------------------------------------"<<endl;
+		cout<<" IdCompra Fecha      Cantidad  IdProd    Producto      Precio   TOTAL"<<endl;
+		cout<<"-----------------------------------------------------------------------" << endl;
+		fseek(ptr,(c-1)*sizeof(reg),SEEK_SET);
+		fread(&reg,sizeof(reg),1,ptr);
+		aux2=convertir_fecha(reg.fecha);
+		while((feof(ptr)==false)&&(aux2<=n))
+		{
+			if(reg.estado=='A')
+			{
+				reg1=obtener_producto(reg.idProd);
+				cout << reg.idCompra << "		" << reg.fecha << "		" <<reg.cantidad << "		" << reg.idProd << "		" << reg1.nombre << "		" << reg1.precio << "		" << reg.cantidad*reg1.precio << endl;
+
+				total=total+(reg.cantidad*reg1.precio);
+			}
+			fread(&reg,sizeof(reg),1,ptr);
+			aux2=convertir_fecha(reg.fecha);
+		}
+		cout << total;
+		fclose(ptr);
+	}
+	else
+	{
+		cout << "El archivo no existe!! " << endl;
+	}
+}
+void venta_por_periodo()
+{
+    char f1[12], f2[12], aux[4];
+    bool valido;
+    int a1, a2, a3, m1, m2, m3, d1, d2, d3, dt1, dt2, dt3;
+    do {
+        valido = true;
+        cout << "INGRESE PRIMERA FECHA" << endl;
+        generar_fecha(f1);
+        cout << "INGRESE SEGUNDA FECHA" << endl;
+        generar_fecha(f2);
+ 
+        // Dias
+        aux[0] = f1[0]; aux[1] = f1[1]; aux[2] = '\0';
+        d1 = atoi(aux);
+        aux[0] = f2[0]; aux[1] = f2[1]; aux[2] = '\0';
+        d2 = atoi(aux);
+ 
+        // Mes
+        aux[0] = f1[3]; aux[1] = f1[4]; aux[2] = '\0';
+        m1 = atoi(aux);
+        aux[0] = f2[3]; aux[1] = f2[4]; aux[2] = '\0';
+        m2 = atoi(aux);
+ 
+        // Año
+        aux[0] = f1[6]; aux[1] = f1[7]; aux[2] = f1[8]; aux[3] = f1[9];
+        a1 = atoi(aux);
+        aux[0] = f2[6]; aux[1] = f2[7]; aux[2] = f2[8]; aux[3] = f2[9];
+        a2 = atoi(aux);
+ 
+       
+        if (a2 < a1) {
+            cout << "La segunda fecha no puede estar antes de la primera" << endl;
+            valido = false;
+        }
+        else if ( (a2 == a1) && (m2 < m1) )
+        {
+            cout << "La segunda fecha no puede estar antes de la primera" << endl;
+            valido = false;
+        }
+        else if ( (a2 == a1) && (m2 == m1) && (d2 <= d1) )
+        {
+            cout << "La segunda fecha no puede estar antes de la primera" << endl;
+            valido = false;
+        }
+    } while (!valido);
+ 
+    cout<<endl<<"   VENTA       "<<endl;
+    cout << "----------------------------------------------------------------------------------" << endl;
+    cout<<" ID        Fecha          Cantidad        PrecioUnit     IdProd      IdVenta     IdCliente" << endl;
+    cout << "----------------------------------------------------------------------------------" << endl;
+   
+    FILE *ptr = fopen("venta.dat", "rb");
+    regVenta reg;
+    valido = false;
+    if (ptr != NULL)
+    {
+        fread(&reg, sizeof(reg), 1, ptr);
+        while (!feof(ptr))
+        {
+            //01/34/6789
+            valido = true;
+            aux[0] = reg.fecha[0]; aux[1] = reg.fecha[1]; aux[2] = '\0';
+            d3 = atoi(aux);
+           
+            aux[0] = reg.fecha[3]; aux[1] = reg.fecha[4]; aux[2] = '\0';
+            m3 = atoi(aux);
+           
+            aux[0] = reg.fecha[6]; aux[1] = reg.fecha[7]; aux[2] = reg.fecha[8]; aux[3] = reg.fecha[9];
+            a3 = atoi(aux);
+            if (reg.estado == 'A')
+            {
+                // Despues de fecha 1
+                if (a3 < a1) valido = false;
+                else if ( (a3 == a1) && (m3 < m1) ) valido = false;
+                else if ( (a3 == a1) && (m3 == m1) && (d3 < d1) ) valido = false;
+ 
+                // Antes de fecha 2
+                if (a2 < a3) valido = false;
+                else if ( (a2 == a3) && (m2 < m3) ) valido = false;
+                else if ( (a2 == a3) && (m2 == m3) && (d2 < d3) ) valido = false;
+ 
+                if (valido) cout << reg.idVenta << "        " << reg.fecha << "     " << reg.cantidad << "      " << reg.idProd << "        " << reg.idVenta << "       " << reg.idCliente << endl;
+            }
+            fread(&reg, sizeof(reg), 1, ptr);
+        }
+    }
+    else cout << "No existe el archivo" << endl;
+    fclose(ptr);
+}
+
+//MAS INGRESOS
+void eliminar(int vec[], int &n){
+	int aux[60],i,k,j,p=n;
+	for(i=0;i<n;i++){
+		aux[i]=vec[i];
+	}
+	for(j=0;j<n;j++){
+		for(i=j+1;i<n;i++){
+			if(vec[i]==vec[j]){
+				for(k=i;k<n-1;k++){
+					vec[k]=vec[k+1];
+				}
+				n--;
+				i--;
+			}
+		}
+	}
+}
+float mayordeunvector(float vec[], int n){
+	int i;
+	float may=vec[0];
+	for(i=0;i<n;i++){
+		if(vec[i]>=may){
+			may=vec[i];
+		}
+	}
+	return (may);
+}
+int posi(float may,float vec[],int n){
+	int i,j=0,k;
+	for(i=0;i<n;i++){
+		j++;
+		if(vec[i]==may){
+			i=n;
+		}
+	}
+	return (j);
+
+}
+void producto_mayor_ingreso(){
+	FILE *ptr;
+	regVenta reg;
+	regProducto reg1;
+	ptr=fopen("venta.dat","rb");
+	int fec1,fec2,p,q,cont=1,aux,aux2,t=0,vec[60],may,i,pos;
+	float tot=0,c=0,vec2[20],mayor;
+	char fecha1[10],fecha2[10],n[10],m[10];
+	ultima_fecha_venta(fecha2);
+	primera_fecha_venta(fecha1);
+	cout<<"\n La primer fecha del archivo es: "<<fecha1;
+	cout<<"\n La ultima fecha del archivo es: "<<fecha2;
+	cout<<"\n Ingrese fechas entre ellas.\n";
+	fec1=convertir_fecha(fecha1);
+	fec2=convertir_fecha(fecha2);
+	do{
+		cout<<"\n Ingrese la primer fecha: ";
+		do{
+			gets(n);
+		}while(strlen(n)==0 || verificar_fecha(n)==false);
+		cout<<"\n Ingrese la ultima fecha: ";
+		do{
+			gets(m);
+		}while(strlen(m)==0 || verificar_fecha(m)==false);
+		p=convertir_fecha(n);
+	    q=convertir_fecha(m);
+	}while(p>q || p<fec1 || q>fec2);
+	system("cls");
+	if(ptr!=NULL){
+		fread(&reg,sizeof(reg),1,ptr);
+		aux = convertir_fecha(reg.fecha);
+		while(feof(ptr)==false && aux<=p){
+			cont++;
+			fread(&reg,sizeof(reg),1,ptr);
+			aux = convertir_fecha(reg.fecha);
+		}
+	}
+	rewind(ptr);
+	if(ptr!=NULL){
+		fseek(ptr,(cont-1)*sizeof(reg),SEEK_SET);
+		fread(&reg,sizeof(reg),1,ptr);
+		aux2=convertir_fecha(reg.fecha);
+		while(feof(ptr)==false && (aux2<=q)){
+			if(reg.estado=='A'){
+				vec[t]=reg.idProd;
+				t++;
+			}
+		fread(&reg,sizeof(reg),1,ptr);
+		}
+	}
+	eliminar(vec,t);
+	for(i=0;i<t;i++){
+		vec2[i]=0;
+	}
+	rewind(ptr);
+	if(ptr!=NULL){
+		for(i=0;i<t;i++){
+		fseek(ptr,(cont-1)*sizeof(reg),SEEK_SET);
+		fread(&reg,sizeof(reg),1,ptr);
+		aux2=convertir_fecha(reg.fecha);
+		while(feof(ptr)==false && (aux2<=q)){
+			if(reg.estado=='A'){
+				if(reg1.idProd==vec[i]){
+				vec2[i]=vec2[i]+(reg.cantidad * reg.precioUnit);
+				}
+			}
+		fread(&reg,sizeof(reg),1,ptr);
+		aux2=convertir_fecha(reg.fecha);
+		}
+		rewind(ptr);
+		}
+	}
+	cout<<"\n";
+	mayor= mayordeunvector(vec2,t);
+	pos=posi(mayor,vec2,t);
+	reg1 = obtener_producto(vec[pos-1]);
+	cout<<"\n El producto que genera mas ingresos es: " <<reg1.nombre;
+	fclose(ptr);
+	cout<<"\n\n";
+	system("pause");
+}
+
+//REPORTE TIPO TEXTO
+void por_producto_compra_texto()
+{
+	FILE *ptr,*txt;
+	int aux;
+	float total=0;
+	char cad[20];
+	regCompra reg;
+	regProducto reg1;
+	aux=IdProd();
+	ptr=fopen("compra.dat","rb");
+	txt=fopen("compraporproducto.txt","w");
+	if(ptr!=NULL)
+	{
+		fputs("\n			REPORTE DE COMPRA POR PRODUCTO	",txt);
+		fputs("\n-----------------------------------------------------------------------------------------------------------",txt);
+		fputs("\nIdCompra 	Fecha		  Cantidad	IdProd		 Producto	",txt);
+		fputs("\n-----------------------------------------------------------------------------------------------------------",txt);
+		fread(&reg,sizeof(reg),1,ptr);
+		while(feof(ptr)==false)
+		{
+			if((reg.estado=='A')&&(reg.idProd==aux))
+			{
+			reg1=obtener_producto(reg.idProd);
+			fputs("\n",txt);
+			itoa(reg.idCompra,cad,10);
+			fputs(cad,txt);
+			fputs("		",txt);
+			fputs(reg.fecha,txt);
+			fputs("		",txt);
+			itoa(reg.cantidad,cad,10);
+			fputs(cad,txt);
+			fputs("		",txt);
+			itoa(reg.idProd,cad,10);
+			fputs(cad,txt);
+			fputs("	\n",txt);
+
+			}
+			fread(&reg,sizeof(reg),1,ptr);
+		}
+	
+		fclose(ptr);
+		fclose(txt);
+	} 
+	else
+	{
+		cout<<"\n El archivo no existe." << endl; 
+	}
+}
+void compra_por_periodo_texto()
+{
+	FILE*ptr,*txt;
+	regCompra reg;
+	regProducto reg1;
+	ptr=fopen("compra.dat","rb");
+	txt=fopen("compraporperiodo.txt","w");
+	float total=0;
+	int fec1,fec2,m,n,aux1,aux2,c=1;
+	char fecha1[30],fecha2[30],a[12],b[12],cad[20];
+	primera_fecha_compra(fecha1);
+	ultima_fecha_compra(fecha2);
+	cout << "Primera fecha: " << fecha1 << endl;
+	cout << "Segunda fecha: " << fecha2 << endl;
+	fec1=convertir_fecha(fecha1);
+	fec2=convertir_fecha(fecha2);
+	do
+	{
+		cout << " Ingrese la primera fecha: ";
+		do
+		{
+			gets(a);
+		}while((strlen(a)==0)||(verificar_fecha(a)==false));
+		do
+		{
+			cout << "Ingresar la segunda fecha: ";
+			gets(b);
+		}while((strlen(b)==0)||(verificar_fecha(b)==false));
+		m=convertir_fecha(a);
+		n=convertir_fecha(b);
+	}while((m>n)||(m<fec1)||(n>fec2));
+	system("cls");
+	if(ptr!=NULL)
+	{
+		fread(&reg,sizeof(reg),1,ptr);
+		aux1=convertir_fecha(reg.fecha);
+		while((feof(ptr)==false)&&(aux1<m))
+		{
+			c++;
+			fread(&reg,sizeof(reg),1,ptr);
+			aux1=convertir_fecha(reg.fecha);
+		}
+	}
+	if(ptr!=NULL)
+	{
+		
+		fputs("\n---------------------REPORTE COMPRA--------------------------------",txt);
+		fputs("\n---------------------------------------------------------------------",txt);
+		fputs("\nIdCompra Fecha      Cantidad  IdProd    Producto   ",txt);
+		fputs("\n-----------------------------------------------------------------------" ,txt);
+		fseek(ptr,(c-1)*sizeof(reg),SEEK_SET);
+		fread(&reg,sizeof(reg),1,ptr);
+		aux2=convertir_fecha(reg.fecha);
+		while((feof(ptr)==false)&&(aux2<=n))
+		{
+			if(reg.estado=='A')
+			{
+				reg1=obtener_producto(reg.idProd);
+				fputs("\n",txt);
+				itoa(reg.idCompra,cad,10);
+				fputs(cad,txt);
+				fputs("		",txt);
+				fputs(reg.fecha,txt);
+				fputs("		",txt);
+				itoa(reg.cantidad,cad,10);
+				fputs(cad,txt);
+				fputs("		",txt);
+				itoa(reg.idProd,cad,10);
+				fputs(cad,txt);
+				fputs("		",txt);
+				fputs(reg1.nombre,txt);
+				fputs("\n",txt);
+				
+			}
+			fread(&reg,sizeof(reg),1,ptr);
+			aux2=convertir_fecha(reg.fecha);
+		}
+		fclose(ptr);
+		fclose(txt);
+	}
+	else
+	{
+		cout << "El archivo no existe!! " << endl;
+	}
+}
+void por_producto_venta_texto()
+{
+	FILE*ptr,*txt;
+	int aux;
+	float total=0;
+	char cad[20];
+	regVenta reg;
+	regProducto reg1;
+	aux=IdProd();
+	ptr=fopen("venta.dat","rb");
+	txt=fopen("ventaporproducto.txt","w");
+	if(ptr!=NULL)
+	{
+		fputs( "\n		REPORTE DE VENTA POR PRODUCTO ",txt);
+		fputs("\n---------------------------------------------------------------------------------------------------------------",txt);
+		fputs(" IdVenta		Fecha	  Cantidad		IdProd		Producto	IdVendedor	IdCliente	TOTAL",txt);
+		fputs("----------------------------------------------------------------------------------------------------------------",txt);
+		fread(&reg,sizeof(reg),1,ptr);
+		while(feof(ptr)==false)
+		{
+			if((reg.estado=='A')&&(reg.idProd==aux))
+			{
+				reg1=obtener_producto(reg.idProd);
+				fputs("\n",txt);
+				itoa(reg.idVenta,cad,10);
+				fputs(cad,txt);
+				fputs("		",txt);
+				fputs(reg.fecha,txt);
+				fputs("		",txt);
+				itoa(reg.cantidad,cad,10);
+				fputs(cad,txt);
+				fputs("		",txt);
+				itoa(reg.idProd,cad,10);
+				fputs(cad,txt);
+				fputs("		",txt);
+				fputs(reg1.nombre,txt);
+				itoa(reg.idVend,cad,10);
+				fputs(cad,txt);
+				fputs("		",txt);
+				itoa(reg.idCliente,cad,10);
+				fputs(cad,txt);
+				fputs("\n",txt);
+
+			}
+			fread(&reg,sizeof(reg),1,ptr);
+		}
+	
+		fclose(ptr);
+		fclose(txt);
+	}
+	else
+	{
+		cout << "El archivo no existe!! " << endl;
+	}
+}
+void venta_por_cliente_texto()
+{
+	FILE*ptr,*txt;
+	int aux;
+	float total;
+	char cad[20];
+	regVenta reg;
+	regProducto reg1;
+	regCliente reg2;
+	aux=IdCliente();
+	ptr=fopen("venta.dat","rb");
+	txt=fopen("ventaporcliente.txt","w");
+	if(ptr!=NULL)
+	{
+		fputs( "\n		REPORTE DE VENTA POR CLIENTE ",txt);
+		fputs("--------------------------------------------------------------------------------------------------------------------------",txt);
+		fputs("\nIdVenta		IdProd	  Producto	IdCliente	Cantidad",txt);
+		fputs("\n---------------------------------------------------------------------------------------------------------------------------",txt);
+		fread(&reg,sizeof(reg),1,ptr);
+		while((feof(ptr)==false)&&(reg.idCliente==aux))
+		{
+			if((reg.estado=='A')&&(reg.idCliente==aux))
+			{
+				reg1=obtener_producto(reg.idProd);
+				reg2=obtener_cliente(reg.idCliente);
+				fputs("\n",txt);
+				itoa(reg.idVenta,cad,10);
+				fputs(cad,txt);
+				fputs("		",txt);
+				itoa(reg.idProd,cad,10);
+				fputs(cad,txt);
+				fputs("		",txt);
+				fputs(reg1.nombre,txt);
+				fputs("		",txt);
+				itoa(reg.idCliente,cad,10);
+				fputs(cad,txt);
+				fputs("		",txt);
+				itoa(reg.cantidad,cad,10);
+				fputs(cad,txt);
+				fputs("\n",txt);
+				
+			}
+			fread(&reg,sizeof(reg),1,ptr);
+		}
+		
+		fclose(ptr);
+		fclose(txt);
+	}
+	else
+	{
+		cout << "El archivo no existe!! " << endl;
+	}
+}
+void venta_por_periodo_texto()
+{
+    char f1[12], f2[12], aux[4];
+    bool valido;
+    int a1, a2, a3, m1, m2, m3, d1, d2, d3;
+    do {
+        valido = true;
+        cout << "INGRESE PRIMERA FECHA" << endl;
+        generar_fecha(f1);
+        cout << "INGRESE SEGUNDA FECHA" << endl;
+        generar_fecha(f2);
+ 
+        //// Dias
+        aux[0] = f1[0]; aux[1] = f1[1]; aux[2] = '\0';
+        d1 = atoi(aux);
+        aux[0] = f2[0]; aux[1] = f2[1]; aux[2] = '\0';
+        d2 = atoi(aux);
+ 
+        // Mes
+        aux[0] = f1[3]; aux[1] = f1[4]; aux[2] = '\0';
+        m1 = atoi(aux);
+        aux[0] = f2[3]; aux[1] = f2[4]; aux[2] = '\0';
+        m2 = atoi(aux);
+ 
+        // Año
+        aux[0] = f1[6]; aux[1] = f1[7]; aux[2] = f1[8]; aux[3] = f1[9];
+        a1 = atoi(aux);
+        aux[0] = f2[6]; aux[1] = f2[7]; aux[2] = f2[8]; aux[3] = f2[9];
+        a2 = atoi(aux);
+ 
+       
+        if (a2 < a1) {
+            cout << "La segunda fecha no puede estar antes de la primera" << endl;
+            valido = false;
+        }
+        else if ( (a2 == a1) && (m2 < m1) )
+        {
+            cout << "La segunda fecha no puede estar antes de la primera" << endl;
+            valido = false;
+        }
+        else if ( (a2 == a1) && (m2 == m1) && (d2 <= d1) )
+        {
+            cout << "La segunda fecha no puede estar antes de la primera" << endl;
+            valido = false;
+        }
+ 
+    } while (!valido);
+ 
+   
+    FILE *ptr = fopen("venta.dat", "rb"), *txt = fopen("reporteVentas.txt", "w");
+    regVenta reg;
+    char buff[1000];
+    fputs("\n   VENTA       \n", txt);
+    fputs("----------------------------------------------------------------------------------\n", txt);
+    fputs(" ID        Fecha          Cantidad        PrecioUnit     IdProd      IdVenta     IdCliente\n", txt);
+    fputs("----------------------------------------------------------------------------------\n\n", txt);
+    if (ptr != NULL)
+    {
+        fread(&reg, sizeof(reg), 1, ptr);
+        while (!feof(ptr))
+        {
+            valido = true;
+            aux[0] = reg.fecha[0]; aux[1] = reg.fecha[1]; aux[2] = '\0';
+            d3 = atoi(aux);
+           
+            aux[0] = reg.fecha[3]; aux[1] = reg.fecha[4]; aux[2] = '\0';
+            m3 = atoi(aux);
+           
+            aux[0] = reg.fecha[6]; aux[1] = reg.fecha[7]; aux[2] = reg.fecha[8]; aux[3] = reg.fecha[9];
+            a3 = atoi(aux);
+            if (reg.estado == 'A')
+            {
+                // Despues de fecha 1
+                if (a3 < a1) valido = false;
+                else if ( (a3 == a1) && (m3 < m1) ) valido = false;
+                else if ( (a3 == a1) && (m3 == m1) && (d3 < d1) ) valido = false;
+ 
+                // Antes de fecha 2
+                if (a2 < a3) valido = false;
+                else if ( (a2 == a3) && (m2 < m3) ) valido = false;
+                else if ( (a2 == a3) && (m2 == m3) && (d2 < d3) ) valido = false;
+ 
+                if (valido)
+                {
+                    itoa(reg.idVenta, buff, 10);
+                    fputs(buff, txt);
+                    fputs("     ", txt);
+                    fputs(reg.fecha, txt);
+                    fputs("     ", txt);
+                    itoa(reg.cantidad, buff, 10);
+                    fputs(buff, txt);
+                    fputs("     ", txt);
+                    itoa(reg.idProd, buff, 10);
+                    fputs(buff, txt);
+                    fputs("     ", txt);
+                    itoa(reg.idVenta, buff, 10);
+                    fputs(buff, txt);
+                    fputs("     ", txt);
+                    itoa(reg.idCliente, buff, 10);
+                    fputs(buff, txt);
+                    fputs("\n", txt);
+                }
+            }
+            fread(&reg, sizeof(reg), 1, ptr);
+        }
+    }
+    else cout << "No existe el archivo" << endl;
+    fclose(ptr);
+    fclose(txt);
+}
+			
+//SUBMENU
+void menu_producto()
+{
+	char opcion[20];
+	int op,nro;
+	do
+	{
+		do
+		{
+			cout << endl;
+			cout << "	MENU PRODUCTOS " << endl;
+			cout << "---------------------------------" << endl;
+			cout << "  1. Limpiar Archivo " << endl;
+			cout << "  2. Añadir " << endl;
+			cout << "  3. Borrar " << endl;
+			cout << "  4. Modificar " << endl;
+			cout << "  5. Mostrar " << endl;
+			cout << "  0. Volver al Menu principal " << endl;
+			cout << "  Ingrese la opcion: " ;
+			gets(opcion);
+			system("cls");
+		}while(verif_solo_numeros(opcion)==false);
+		op=atoi(opcion);
+		switch(op)
+		{
+			case 1: archivo_producto();break;
+			case 2: agregar_producto();break;
+			case 3: eliminar_producto();break;
+			case 4: modificar_producto();break;
+			case 5:	mostrar_producto();
+					system("pause");
+					system("cls");break;
+			
+			default: break;
+		}
+	}while(op!=0);
+}
+void menu_cliente()
+{
+	char opcion[20];
+	int op,nro;
+	do
+	{
+		do
+		{
+			cout << endl;
+			cout << "	MENU CLIENTE " << endl;
+			cout << "---------------------------------" << endl;
+			cout << "  1. Limpiar Archivo " << endl;
+			cout << "  2. Añadir " << endl;
+			cout << "  3. Borrar " << endl;
+			cout << "  4. Modificar " << endl;
+			cout << "  5. Mostrar " << endl;
+			cout << "  0. Volver al Menu principal " << endl;
+			cout << "  Ingrese la opcion: " ;
+			gets (opcion);
+			system("cls");
+		}while(verif_solo_numeros(opcion)==false);
+		op=atoi(opcion);
+		switch(op)
+		{
+			case 1: archivo_cliente(); break;
+			case 2: agregar_cliente(); break;
+			case 3: mostrar_cliente();
+					cout << endl;
+					eliminar_cliente();break;
+			case 4: mostrar_cliente();
+					modificar_cliente();break;
+			case 5:	mostrar_cliente();
+					system("pause");
+					system("cls");break;
+			default: break;
+		}
+
+	}while(op!=0);
+}
+void menu_vendedor()
+{
+	char opcion[20];
+	int op;
+	do
+	{
+		do
+		{
+			cout << endl;
+			cout << "	MENU VENDEDOR " << endl;
+			cout << "-------------------------------" << endl;
+			cout << "  1. Limpiar Archivo " << endl;
+			cout << "  2. Añadir " << endl;
+			cout << "  3. Borrar " << endl;
+			cout << "  4. Modificar " << endl;
+			cout << "  5. Mostrar " << endl;
+			cout << "  0. Volver al Menu principal " << endl;
+			cout << "  Ingrese la opcion: " ;
+			gets(opcion);
+			system("cls");
+		}while(verif_solo_numeros(opcion)==false);
+		op=atoi(opcion);
+		switch(op)
+		{
+			case 1: archivo_vendedor(); break;
+	
+			case 2: agregar_vendedor(); break;
+			case 3: mostrar_vendedor();break;
+					eliminar_vendedor();break;
+			case 4: mostrar_vendedor();
+					modificar_vendedor();break;
+			case 5: mostrar_vendedor();break;
+					modificar_vendedor();break;
+			default: break;
+		}
+	}while(op!=0);
+}
+void menu_venta()
+{
+	char opcion[20];
+	int op;
+	do
+	{
+		do
+		{
+			cout << endl;
+			cout << "	MENU VENTA " << endl;
+			cout << "-------------------------------" << endl;
+			cout << "  1. Limpiar Archivo " << endl;
+			cout << "  2. Añadir " << endl;
+			cout << "  3. Borrar " << endl;
+			cout << "  4. Modificar " << endl;
+			cout << "  5. Mostrar " << endl;
+			cout << "  0. Volver al Menu principal " << endl;
+			cout << "  Ingrese la opcion: " ;
+			gets(opcion);
+			system("cls");
+		} while(verif_solo_numeros(opcion)==false);
+		op=atoi(opcion);
+		switch(op)
+		{
+			case 1: archivo_venta();break;
+			case 2: agregar_venta(); break;
+			case 3: mostrar_venta(); 
+					eliminar_venta(); break;
+			case 4: mostrar_venta();
+					modificar_venta();break;
+			case 5:	mostrar_venta();
+					system("pause");
+					system("cls");break;
+			default: break;
+		}
+	}while(op!=0);
+}
+void menu_compra()
+{
+	char opcion[20];
+	int op;
+	do
+	{
+		do
+		{
+			cout << endl;
+			cout << "	MENU COMPRA " << endl;
+			cout << "----------------------------------" << endl;
+			cout << "  1. Limpiar Archivo " << endl;
+			cout << "  2. Añadir " << endl;
+			cout << "  3. Borrar " << endl;
+			cout << "  4. Modificar " << endl;
+			cout << "  5. Mostrar " << endl;
+			cout << "  0. Volver al Menu principal " << endl;
+			cout << "  Ingrese la opcion: " ;
+			gets(opcion);
+			system("cls");
+		}while(verif_solo_numeros(opcion)==false);
+		op=atoi(opcion);
+		switch(op)
+		{
+			case 1: archivo_compra();break;
+			case 2: agregar_compra(); break;
+			case 3: mostrar_compra();
+					eliminar_compra(); break;
+			case 4: mostrar_compra();
+					modificar_compra(); break;
+			case 5: mostrar_compra(); break;
+			default: break;
+		}
+	}while(op!=0);
+}
+void menu_reporte()
+{
+	int op;
+	char opcion[10];
+	do
+	{
+		do
+		{
+			cout << endl;
+			cout << "	 MENU REPORTE " << endl;
+			cout << "----------------------------------------" << endl;
+			cout << "  1. Reporte de compra por producto " << endl;
+			cout << "  2. Reporte de compra por periodo " << endl;
+			cout << "  3. Reporte de venta por producto " << endl;
+			cout << "  4. Reporte de venta por periodo " << endl;
+			cout << "  5. Reporte de venta por cliente " << endl;
+			cout << "  0. Volver al menu principal " << endl;
+			cout << "  Ingrese la opcion: ";
+			gets(opcion);
+			system("cls");
+		}while(verif_solo_numeros(opcion)==false);
+		op=atoi(opcion);
+		switch(op)
+		{
+			case 1: mostrar_producto();
+					cout << endl;
+					por_producto_compra();
+					system("pause");break;
+			case 2: compra_por_periodo();
+					system("pause"); 
+					system("cls");break;
+			case 3: mostrar_venta();
+					cout << endl;
+					por_producto_venta();
+					system("pause"); break;
+			case 4: venta_por_periodo();
+					system("pause");
+					system("cls"); break;
+			case 5: venta_por_cliente();
+					system("pause");break;
+			default: break;
+		}
+	}while(op!=0);
+}
+void menu_reporte_texto()
+{
+	int op;
+	char opcion[20];
+	do
+	{
+		do
+		{
+			cout << " MENU REPORTE TIPO TEXTO " << endl;
+			cout << " 1. Producto " << endl;
+			cout << " 2. Cliente " << endl; 
+			cout << " 3. Vendedor " << endl;
+			cout << " 4. Venta " << endl;
+			cout << " 5. Compra " << endl;
+			cout << " 6. Compra por producto " << endl;
+			cout << " 7. Compra por periodo " << endl;
+			cout << " 8. Venta por producto " << endl;
+			cout << " 9. Venta por periodo " << endl;
+			cout << "10. Venta por cliente " << endl;
+			cout << " 0. Volver al menu principal " << endl;
+			cout << "Ingrese una opcion: ";
+			gets(opcion);
+			system("cls");
+		}while(verif_solo_numeros(opcion)==false);
+		op=atoi(opcion);
+		switch(op)
+		{
+			case 1: system("cls");
+					freopen("producto.txt","w",stdout);
+					mostrar_producto();
+					fclose(stdout);
+					system("pause");
+					system("cls"); break;
+			case 2: system("cls");
+					freopen("cliente.txt","w",stdout);
+					mostrar_cliente();
+					fclose(stdout);
+					system("pause");
+					system("cls"); break;
+			case 3: system("cls");
+					freopen("vendedor.txt","w",stdout);
+					mostrar_vendedor();
+					fclose(stdout);
+					system("pause");
+					system("cls"); break;
+			case 4: system("cls");
+					freopen("venta.txt","w",stdout);
+					mostrar_venta();
+					fclose(stdout);
+					system("pause");
+					system("cls"); break;
+			case 5: system("cls");
+					freopen("compra.txt","w",stdout);
+					mostrar_compra();
+					fclose(stdout);
+					system("pause");
+					system("cls"); break;
+			case 6:  por_producto_compra_texto();break;
+			case 7: compra_por_periodo_texto();break;
+			case 8: por_producto_venta_texto();break;
+			case 9: venta_por_periodo_texto();break;
+			case 10: venta_por_cliente_texto();break;
+			default: break;
+		}
+	}while(op!=0);
+}
+
+void main()
+{
+	char opcion[20];
+	int op;
+
+		cout << endl;
+
+	cout << "	########  #### ######## ##    ## ##     ## ######## ##    ## #### ########   #######  " << endl;
+	cout << "	##     ##  ##  ##       ###   ## ##     ## ##       ###   ##  ##  ##     ## ##     ## " << endl;
+	cout << "	##     ##  ##  ##       ####  ## ##     ## ##       ####  ##  ##  ##     ## ##     ## " << endl;
+	cout << "	########   ##  ######   ## ## ## ##     ## ######   ## ## ##  ##  ##     ## ##     ## " << endl;
+	cout << "	##     ##  ##  ##       ##  ####  ##   ##  ##       ##  ####  ##  ##     ## ##     ## " << endl;
+	cout << "	##     ##  ##  ##       ##   ###   ## ##   ##       ##   ###  ##  ##     ## ##     ## " << endl;
+	cout << "	########  #### ######## ##    ##    ###    ######## ##    ## #### ########   #######  " << endl;
+	cout << endl;
+	system("pause");
+	system("cls");
+
+	do
+	{
+		do
+		{
+			cout << endl;
+			cout << "---------------------------------" << endl;
+			cout << "	MENU PRINCIPAL		"<< endl;
+			cout << "---------------------------------" << endl;
+			cout << "  1. Menu Proudctos " << endl;
+			cout << "  2. Menu Cliente " << endl;
+			cout << "  3. Menu Vendedor " << endl;
+			cout << "  4. Menu Venta " << endl;
+			cout << "  5. Menu Compra " << endl;
+			cout << "  6. Reportes " << endl;
+			cout << "  7. Reporte tipo texto " << endl;
+			cout << "  8. Producto que genera mas ingresos " << endl;
+			cout << "  0. Salir " << endl;
+			cout << "  Ingrese la opcion: "; 
+			gets(opcion);
+			system("cls");
+			
+		}while(verif_solo_numeros(opcion)==false);
+		op=atoi(opcion);
+		switch(op)
+		{
+			case 1: menu_producto(); break;
+			case 2: menu_cliente(); break;
+			case 3: menu_vendedor(); break;
+			case 4: menu_venta(); break;
+			case 5: menu_compra(); break;
+			case 6: menu_reporte();break;
+			case 7: menu_reporte_texto();break;
+			case 8: producto_mayor_ingreso();break;
+			default: break;
+		}
+	}while(op!=0);
+	getch();
+}
